@@ -3,6 +3,8 @@ provider "aws" {
   profile = "<AWS CONFIG PROFILE>"
 }
 
+
+// creating VPC
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 
@@ -13,6 +15,8 @@ resource "aws_vpc" "main" {
   }
 }
 
+
+//Creating pubic subnet
 resource "aws_subnet" "public" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.0.0/24"
@@ -24,6 +28,7 @@ resource "aws_subnet" "public" {
 }
 
 
+//create private subnet
 resource "aws_subnet" "private" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.1.0/24"
@@ -35,6 +40,7 @@ resource "aws_subnet" "private" {
 }
 
 
+//creating internet gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
@@ -44,6 +50,7 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
+// creating elastic ip address
 resource "aws_eip" "nat-eip" {
   vpc        = true
   depends_on = [aws_internet_gateway.igw]
@@ -54,6 +61,7 @@ resource "aws_eip" "nat-eip" {
   }
 }
 
+//creating nat gateway
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat-eip.id
   subnet_id     = aws_subnet.public.id
@@ -64,6 +72,7 @@ resource "aws_nat_gateway" "nat" {
   }
 }
 
+//creating route table for public access
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -78,7 +87,7 @@ resource "aws_route_table" "public" {
   }
 }
 
-
+// creating private aws route table
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
@@ -93,13 +102,14 @@ resource "aws_route_table" "private" {
   }
 }
 
+//associating public route to public subnet
 resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 
 }
 
-
+// associating private route to nat gateway
 resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private.id
   route_table_id = aws_route_table.private.id
